@@ -16,7 +16,7 @@ from library.twitch import TwitchChatStream
 # defines
 APP_ICON = os.path.dirname( __file__ ) + '/resources/logo.png'
 APP_TITLE = 'StreamFlash'
-APP_VERSION = '1.0'
+APP_VERSION = '1.1'
 
 # globals
 app = None
@@ -24,18 +24,20 @@ tcs = None
 win = None
 last = 0
 screen = 0
-options = { 'username': '', 'oauth': '', 'screen': 0, 'duration': 400 }
+options = { 'username': '', 'oauth': '', 'screen': 0, 'duration': 400, 'delay': 5, 'pause': 0 }
 
 def systray( app ):
-	global APP_ICON, APP_TITLE, APP_VERSION
+	global APP_ICON, APP_TITLE, APP_VERSION, options
 
 	from PyQt5.QtGui import QIcon
-	from PyQt5.QtWidgets import QMenu, QSystemTrayIcon
+	from PyQt5.QtCore import Qt, QTimer
+	from PyQt5.QtWidgets import QMenu, QLabel, QSpinBox, QWidgetAction, QSystemTrayIcon
 
 	tray = QSystemTrayIcon( app )
 	tray.setIcon( QIcon( APP_ICON ) )
 
 	menu = QMenu()
+	menu.setStyleSheet( 'QMenu::item, QLabel { padding: 3px 6px 3px 6px; }' )
 
 	action = menu.addAction( '%s v%s' % ( APP_TITLE, APP_VERSION ) )
 	action.setEnabled( False )
@@ -47,6 +49,96 @@ def systray( app ):
 
 	action = menu.addAction( 'Next Screen' )
 	action.triggered.connect( lambda: next_screen() )
+
+	menu.addSeparator()
+
+	# Duration
+	submenu = menu.addMenu( 'Duration (ms)' )
+
+	action = QWidgetAction( menu )
+	spinbox = QSpinBox()
+	spinbox.setFixedWidth( 80 )
+	spinbox.setRange( 100, 5000 )
+	spinbox.setSingleStep( 10 )
+	spinbox.setValue( options[ 'duration' ] )
+	spinbox.valueChanged.connect( lambda value: set_option( 'duration', value ) )
+	action.setDefaultWidget( spinbox )
+	submenu.addAction( action )
+	#! Duration
+
+	# Delay
+	submenu = menu.addMenu( 'Delay (sec)' )
+
+	action = QWidgetAction( menu )
+	spinbox = QSpinBox()
+	spinbox.setFixedWidth( 80 )
+	spinbox.setRange( 1, ( 60 * 5 ) )
+	spinbox.setSingleStep( 10 )
+	spinbox.setValue( options[ 'delay' ] )
+	spinbox.valueChanged.connect( lambda value: set_option( 'delay', value ) )
+	action.setDefaultWidget( spinbox )
+	submenu.addAction( action )
+	#! Delay
+
+	# Pause
+	submenu = menu.addMenu( 'Pause (min)' )
+
+	action = QWidgetAction( menu )
+	spinbox_pause = QSpinBox()
+	spinbox_pause.setFixedWidth( 80 )
+	spinbox_pause.setRange( 1, ( 60 * 24 ) )
+	spinbox_pause.setSingleStep( 1 )
+	spinbox_pause.setValue( 0 )
+	action.setDefaultWidget( spinbox_pause )
+	submenu.addAction( action )
+
+	submenu.addSeparator()
+
+	action_pause = QWidgetAction( menu )
+	button_pause = QLabel()
+	button_pause.setFixedWidth( 80 )
+	button_pause.setAlignment( Qt.AlignCenter )
+	button_pause.setText( 'Start' )
+	action_pause.setDefaultWidget( button_pause )
+	submenu.addAction( action_pause )
+
+	timer = QTimer()
+	timer.setSingleShot( False )
+	def interval( init = False ):
+		global options
+		nonlocal timer, spinbox_pause
+
+		value = options[ 'pause' ]
+		if value > 0:
+			if init:
+				timer.stop()
+				timer.start( 1000 * 60 )
+			else:
+				value -= 1
+		else:
+			timer.stop()
+			value = 0
+
+		set_option( 'pause', value )
+		spinbox_pause.setEnabled( not value )
+		spinbox_pause.setValue( max( 1, value ) )
+		spinbox_pause.setFocusPolicy( Qt.NoFocus )
+		button_pause.setText( 'Stop' if value > 0 else 'Start' )
+	timer.timeout.connect( lambda: interval() )
+
+	def set_pause( force = None ):
+		nonlocal timer, spinbox_pause
+
+		value = 0
+		pause = ( timer.isActive() if force is None else ( not force ) )
+		if not pause:
+			value = max( 1, spinbox_pause.value() )
+
+		set_option( 'pause', value )
+		interval( True )
+
+	action_pause.triggered.connect( lambda: set_pause() )
+	#! Pause
 
 	menu.addSeparator()
 
@@ -103,7 +195,7 @@ def listener( username, oauth, success = None, error = None, verbose = False ):
 		if connected:
 			print( 'connected' )
 			if success:
-				success()
+				success( True )
 
 			while True:
 				receive = []
@@ -141,19 +233,28 @@ def next_screen( force = None, without_flash = False ):
 	win.showFullScreen();
 
 	if not without_flash:
-		send_flash()
+		send_flash( True )
 
 def send_error():
 	global win
 
 	win.sigerror.emit()
 
-def send_flash():
+def send_flash( force = False ):
 	global win, last, options
 
-	if not last or last < time.time():
-		last = ( time.time() + 1 )
-		win.sigflash.emit( options[ 'duration' ] )
+	delay = max( 1, options[ 'delay' ] )
+	duration = max( 100, options[ 'duration' ] )
+
+	if force or not last or ( last + delay ) < time.time():
+		last = time.time()
+		win.sigflash.emit( duration )
+
+def set_option( name, value ):
+	global options
+
+	if name in options and type( options[ name ] ) == type( value ):
+		options[ name ] = value
 
 def main():
 	global app, win, options
@@ -165,8 +266,7 @@ def main():
 		with open( config, 'rb' ) as f:
 			data = json.loads( f.read() )
 			for key, value in data.items():
-				if key in options and type( options[ key ] ) == type( value ):
-					options[ key ] = value
+				set_option( key, value )
 	except:
 		pass
 

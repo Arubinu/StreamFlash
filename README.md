@@ -11,9 +11,11 @@ Then you will have to install PyQt5 via the command prompt:
  - Finally copy the following command (right click on Windows to paste) and validate: `python -m pip install -r requirements.txt`.
 
 Now enter your personal information in the `config.json` file:
- - screen: Default screen number to operate on,
  - username: The name of your Twitch channel,
- - oauth: https://twitchapps.com/tmi/.
+ - oauth: https://twitchapps.com/tmi/,
+ - screen: Default screen number to operate on,
+ - duration: Flash duration (ms),
+ - delay: Dead time between two flashes (sec).
 
 Now that everything is installed, you can double-click on the `main.pyw` file, which will launch the application in your system tray.
 
