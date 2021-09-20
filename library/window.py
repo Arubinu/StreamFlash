@@ -95,4 +95,4 @@ def main( icon = None, title = None ):
 	exec()
 
 if __name__ == '__main__':
-	main( os.path.dirname( __file__ ) + '/resources/logo.png' )
+	main( os.path.dirname( __file__ ) + '/../resources/logo.png' )

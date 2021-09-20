@@ -8,9 +8,9 @@ Then you will have to install PyQt5 via the command prompt:
  - Use the keyboard shortcut WIN + R,
  - Write `cmd` then validate,
  - Write `cd` followed by a space, then drag the `StreamFlash` folder into the command prompt and validate,
- - Finally copy the following command (right click on Windows to paste) and validate: `python -m pip install -r requirements.txt`.
+ - Finally copy the following command (right click on Windows to paste) and validate: `python -m pip install -r requirements.txt` (if that doesn't work, add `--user` to the command).
 
-Now enter your personal information in the `config.json` file:
+Now enter your personal information in the `config.json` file (for more details on the syntax, inquire about the JSON format):
  - username: The name of your Twitch channel,
  - oauth: https://twitchapps.com/tmi/,
  - screen: Default screen number to operate on,

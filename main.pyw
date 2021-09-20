@@ -37,7 +37,7 @@ def systray( app ):
 	tray.setIcon( QIcon( APP_ICON ) )
 
 	menu = QMenu()
-	menu.setStyleSheet( 'QMenu::item, QLabel { padding: 3px 6px 3px 6px; }' )
+	menu.setStyleSheet( 'QMenu::item, QLabel { padding: 3px 6px 3px 6px; } QMenu::item:selected { background-color: rgba( 0, 0, 0, .1 ); }' )
 
 	action = menu.addAction( '%s v%s' % ( APP_TITLE, APP_VERSION ) )
 	action.setEnabled( False )
