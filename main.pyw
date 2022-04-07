@@ -11,6 +11,13 @@ from __future__ import print_function
 import os
 import time
 
+from threading import Thread
+
+from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtWidgets import QMenu, QLabel, QSpinBox, QWidgetAction, QSystemTrayIcon
+
+from library import window
 from library.twitch import TwitchChatStream
 
 # defines
@@ -29,15 +36,11 @@ options = { 'username': '', 'oauth': '', 'screen': 0, 'duration': 400, 'delay': 
 def systray( app ):
 	global APP_ICON, APP_TITLE, APP_VERSION, options
 
-	from PyQt5.QtGui import QIcon
-	from PyQt5.QtCore import Qt, QTimer
-	from PyQt5.QtWidgets import QMenu, QLabel, QSpinBox, QWidgetAction, QSystemTrayIcon
-
 	tray = QSystemTrayIcon( app )
 	tray.setIcon( QIcon( APP_ICON ) )
 
 	menu = QMenu()
-	menu.setStyleSheet( 'QMenu::item, QLabel { padding: 3px 6px 3px 6px; } QMenu::item:selected { background-color: rgba( 0, 0, 0, .1 ); }' )
+	menu.setStyleSheet( 'QMenu::item, QLabel { padding: 3px 6px 3px 6px; } QMenu::item:selected, QLabel:hover { background-color: rgba( 0, 0, 0, .1 ); }' )
 
 	action = menu.addAction( '%s v%s' % ( APP_TITLE, APP_VERSION ) )
 	action.setEnabled( False )
@@ -228,9 +231,10 @@ def next_screen( force = None, without_flash = False ):
 	screen = ( screen % len( screens ) )
 	geometry = screens[ screen ].availableGeometry()
 
-	win.windowHandle().setScreen( screens[ screen ] );
-	win.setGeometry( geometry );
-	win.showFullScreen();
+	win.windowHandle().setScreen( screens[ screen ] )
+	win.setGeometry( geometry )
+	win.setFixedWidth( geometry.width() )
+	win.setFixedHeight( geometry.height() )
 
 	if not without_flash:
 		send_flash( True )
@@ -271,17 +275,12 @@ def main():
 		pass
 
 	try:
-		from library import window
-
-		from threading import Thread
-		from PyQt5.QtCore import Qt
-
 		window.init( APP_ICON, APP_TITLE )
 		app = window.app
 		win = window.win
 
 		win.setWindowFlags( win.windowFlags() | Qt.Tool )
-		win.setWindowFlags( win.windowFlags() | Qt.WindowFullScreen )
+		#win.setWindowFlags( win.windowFlags() | Qt.WindowFullScreen )
 		win.setVisible( True )
 
 		if options[ 'screen' ] >= 0:
